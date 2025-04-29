@@ -11,6 +11,7 @@ import json
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
 import random
 import scipy.stats as stats
+from dotenv import load_dotenv
 
 load_dotenv()
 openai_key = os.getenv("OPENAI_API_KEY")

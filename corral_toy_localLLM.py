@@ -336,7 +336,6 @@ class llmModel:
 
         with torch.no_grad():
             outputs = self.model.generate(input_tensor, max_new_tokens=128) #20, 50, 64, 128
-
         new_tokens = outputs[:, input_tensor.shape[1]:]
         # action_text: is the LLM decision
         action_text = self.tokenizer.decode(new_tokens[0], skip_special_tokens=True).lower()
