@@ -8,6 +8,53 @@ from openai import OpenAI
 import os
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
 import random
+import pickle
+
+map_configs = {
+        "2x2OneStep": [
+            "SG",
+            "HF",
+            ],
+        "2x2": [
+            "SF",
+            "HG",
+            ],
+        "3x3":[
+            "SFF",
+            "FFH",
+            "HFG"
+            ],
+        "4x4":[
+            "SFFF",
+            "FHFH",
+            "FFFH",
+            "HFFG"
+            ],
+        "8x8": [
+            "SFFFFFFF",
+            "FFFFFFFF",
+            "FFFHFFFF",
+            "FFFFFHFF",
+            "FFFHFFFF",
+            "FHHFFFHF",
+            "FHFFHFHF",
+            "FFFHFFFG",
+        ]
+}
+
+def platform_seeded(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+def env_seeded(env, seed):
+    env.reset(seed=seed)
+    env.action_space.seed(seed)
+    env.observation_space.seed(seed)
+
+
 
 def shaped_reward(observation):
     grid_size = 4
@@ -143,6 +190,8 @@ class llmModel:
             # Set generation configuration
             self.model.generation_config = GenerationConfig.from_pretrained(self.model_name)
             self.model.generation_config.pad_token_id = self.model.generation_config.eos_token_id
+            print("Loaded pad_token_id:", self.model.generation_config.pad_token_id)
+
 
         # Slippery property description
         self.slippery_property_desc = "The frozen surface is slippery. The intended action is executed with a 1/3 probability, while each of the perpendicular actions is also taken with a 1/3 probability."
@@ -545,3 +594,122 @@ def evaluate_agent(agent, eval_env, n_episodes_eval=10, debug=False):
 
     avg_return = np.mean(eval_returns)
     return avg_return, eval_returns
+
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_mean_sem(results_dict, label=None, color=None, save_path=None):
+    """
+    Plot mean and standard error of the mean (SEM) from a dictionary of results.
+
+    Args:
+        results_dict (dict): A dictionary where each key is a seed (e.g., 0, 1, 2, ...) and the value is a list
+                             of tuples (step, avg_return), all with the same steps.
+        label (str): Label for the line in the plot.
+        color (str): Optional color for the line and fill.
+        save_path (str): If given, saves the figure to this path.
+    
+    Returns:
+        steps (list of int): Shared step values.
+        mean_returns (np.ndarray): Mean return at each step.
+        sem_returns (np.ndarray): Standard error of the mean at each step.
+    """
+    # Extract steps from one of the seeds (assumes same across seeds)
+    seeds = list(results_dict.keys())
+    steps = [step for step, _ in results_dict[seeds[0]]]
+
+    # Extract returns: shape [num_seeds, num_steps]
+    returns = np.array([[ret for _, ret in results_dict[seed]] for seed in seeds])
+
+    # Compute mean and SEM
+    mean_returns = returns.mean(axis=0)
+    sem_returns = returns.std(axis=0, ddof=1) / np.sqrt(len(seeds))
+
+    # Plot
+    plt.figure(figsize=(8, 5))
+    plt.plot(steps, mean_returns, label=label or "Mean Return", color=color)
+    plt.fill_between(steps, mean_returns - sem_returns, mean_returns + sem_returns, alpha=0.3, color=color)
+    plt.xlabel("Step")
+    plt.ylabel("Average Return")
+    plt.title("Evaluation Performance Across Seeds")
+    plt.grid(True)
+    if label:
+        plt.legend()
+    if save_path:
+        plt.savefig(save_path)
+        print(f"Plot saved to {save_path}")
+    plt.show()
+
+    return steps, mean_returns, sem_returns
+
+
+def collect_llm_experiences(save_path, env_name = "FrozenLake-v1", map_name="4x4", n_episodes=1000, seed=0, llm_config=None):
+    env = gym.make(env_name, is_slippery=False, map_name=map_name, desc=map_configs[map_name])
+    env_seeded(env, seed)
+
+    if llm_config is None:
+        llm_config = {}
+
+    # Unpack defaults with overrides
+    llm_agent = FrozenLakeAgent(
+        learning_rate=0.9,
+        final_learning_rate=0.0001,
+        initial_epsilon=0.0,
+        epsilon_decay=0.0,
+        final_epsilon=0.0,
+        discount_factor=0.9,
+        update_type="llm",
+        map_config=map_configs[map_name],
+        is_slippery=False,
+        llm_model_name=llm_config.get("llm_model_name", "TheBloke/deepseek-llm-7b-chat-GPTQ"),
+        history_window_size=llm_config.get("history_window_size", 0),
+        milestones=llm_config.get("milestones", []),
+        full_map_observable=llm_config.get("full_map_observable", False),
+        full_map_desc_type=llm_config.get("full_map_desc_type", 0),
+        generate_thought=llm_config.get("generate_thought", False),
+        debug=llm_config.get("debug", False),
+        use_chatgpt=llm_config.get("use_chatgpt", False),
+        chatgpt_client=llm_config.get("chatgpt_client", None),
+        max_new_tokens=llm_config.get("max_new_tokens", 128),
+        use_fewshot=llm_config.get("use_fewshot", False),
+    )
+
+    buffer = []
+
+    state, _ = env.reset()
+    step_count = 0
+    episode_returns = []
+    current_episode_rewards = []
+    episode_id = 1
+    total_transitions = 0
+    #while step_count < n_episodes:
+    for episode_id in tqdm(range(n_episodes), desc=f"Collecting {n_episodes} transitions"):
+        state, _ = env.reset()
+        done = False
+        step_count = 0
+        while not done:
+            if llm_config["debug"]:
+                print(f"[episode {episode_id}, step {step_count}]")
+            action = llm_agent.get_action(state, use_llm=True)
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+            transition = (state, action, reward, next_state, done)
+            buffer.append(transition)
+            state = next_state if not done else None
+
+            step_count += 1
+            current_episode_rewards.append(reward)
+
+        episode_returns.append(sum(current_episode_rewards))
+        current_episode_rewards = []
+        total_transitions += step_count
+
+    ave_ret = round(sum(episode_returns)/len(episode_returns), 2)
+    save_path = save_path[:-4]+f"_{total_transitions}Trans_{ave_ret}AveR.pkl"
+    with open(save_path, "wb") as f:
+        pickle.dump(buffer, f)
+
+    print(f"Saved {len(buffer)} transitions to {save_path}: total transitions {total_transitions}, average episode return is {ave_ret}")
+

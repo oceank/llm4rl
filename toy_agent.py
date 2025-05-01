@@ -11,7 +11,7 @@ import json
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
 import random
 import scipy.stats as stats
-from utility import shaped_reward, llmModel, CorralFastIGW, FrozenLakeAgent, evaluate_agent 
+from utility import shaped_reward, llmModel, CorralFastIGW, FrozenLakeAgent, evaluate_agent, map_configs 
 
 
 
@@ -67,37 +67,7 @@ if __name__ == '__main__':
         "rl"    : "RL",
     }
     llm_model_name = args.llm_model_name #"TheBloke/deepseek-llm-7b-chat-GPTQ" #"deepseek-ai/deepseek-llm-7b-chat"
-    map_configs = {
-            "2x2OneStep": [
-                "SG",
-                "HF",
-                ],
-            "2x2": [
-                "SF",
-                "HG",
-                ],
-            "3x3":[
-                "SFF",
-                "FFH",
-                "HFG"
-                ],
-            "4x4":[
-                "SFFF",
-                "FHFH",
-                "FFFH",
-                "HFFG"
-                ],
-            "8x8": [
-                "SFFFFFFF",
-                "FFFFFFFF",
-                "FFFHFFFF",
-                "FFFFFHFF",
-                "FFFHFFFF",
-                "FHHFFFHF",
-                "FHFFHFHF",
-                "FFFHFFFG",
-            ]
-    }
+
     map_name = args.map_name  #'4x4' #'2x2'
     map_config = map_configs[map_name]
     env_name = 'FrozenLake-v1'
@@ -111,6 +81,10 @@ if __name__ == '__main__':
     prompt_tag = f"basic_{h_tag}_{o_tag}"
     if len(milestones) > 0:
         prompt_tag += "_UseMilestones"
+    if args.use_fewshot:
+        prompt_tag += "_Fewshot"
+    else:
+        prompt_tag += "_Zeroshot"
     train_eval_tag = f"EvalEp{args.n_episodes_eval}EvalIntv{args.eval_interval}TrainEp{args.n_episodes}"
     save_dir = f'./result/{env_id}/{llm_model_name}_{agent_name}/{prompt_tag}/{train_eval_tag}/seed_{args.seed}/'
     os.makedirs(save_dir, exist_ok=True)

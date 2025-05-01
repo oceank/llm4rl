@@ -6,7 +6,7 @@ map_names=(3x3) #(2x2OneStep 2x2 3x3 4x4) #8x8)
 tr_eps=10000 #5000 #15000 # number of episodes for training
 lr=0.9 # learning rate of Q-learning before epsilon decays to 0
 lr_final=0.0001 # learning rate of Q-learning after epsilon decays to 0
-ev_eps=5 #25 #25 #5 #25 #100 # number of episodes per evaluation
+ev_eps=1 #25 #25 #5 #25 #100 # number of episodes per evaluation
 ev_interval=25 #1 25 #100 # evaluation frequency: e.g., evaluate the policy during training every 100 episodes 
 start_epsilon=1.0 # the initial value of the epsilon
 final_epsilon=0.0 # the final value of the ep
@@ -22,10 +22,11 @@ tr_config_prefix=" --max_new_tokens ${max_new_tokens} --history_window_size ${hi
 ## fully observabile
 #tr_config_prefix="${tr_config_prefix} --full_map_observable --full_map_desc_type ${full_map_desc_type} "
 ## llm model
-llm_model_name="gpt-4o-2024-08-06" # "TheBloke/deepseek-llm-7b-chat-GPTQ" "deepseek-ai/deepseek-llm-7b-chat" "gpt-4o-2024-08-06"
+### "TheBloke/deepseek-llm-7b-chat-GPTQ" "TheBloke/deepseek-ai/deepseek-llm-7b-chat" "gpt-4o-2024-08-06" "Qwen/Qwen3-4B"
+llm_model_name="TheBloke/deepseek-llm-7b-chat-GPTQ"
 tr_config_prefix="${tr_config_prefix} --llm_model_name ${llm_model_name} "
 ## use chatgpt
-tr_config_prefix="${tr_config_prefix} --use_chatgpt "
+#tr_config_prefix="${tr_config_prefix} --use_chatgpt "
 ## use few-shot examples
 tr_config_prefix="${tr_config_prefix} --use_fewshot "
 
@@ -57,22 +58,4 @@ do
     done
 done
 
-#python corral_toy_localLLM.py --update_type random --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 1
-
-#python corral_toy_localLLM.py --update_type random --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 2
-#python corral_toy_localLLM.py --update_type random --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 3
-#python corral_toy_localLLM.py --update_type random --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 4
-#python corral_toy_localLLM.py --update_type random --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 5
-
-#python corral_toy_localLLM.py --update_type llm --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 1
-#python corral_toy_localLLM.py --update_type llm --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 2
-#python corral_toy_localLLM.py --update_type llm --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 3
-#python corral_toy_localLLM.py --update_type llm --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 4
-#python corral_toy_localLLM.py --update_type llm --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 5
-
-#python corral_toy_localLLM.py --update_type rl --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 1
-#python corral_toy_localLLM.py --update_type rl --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 2
-#python corral_toy_localLLM.py --update_type rl --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 3
-#python corral_toy_localLLM.py --update_type rl --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 4
-#python corral_toy_localLLM.py --update_type rl --n_episodes_eval 100 --n_episodes 20000 --eval_interval 100 --seed 5
 
