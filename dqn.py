@@ -93,7 +93,7 @@ def train_dqn(env_name="FrozenLake-v1", map_name="4x4", max_steps=20000, eval_in
 
     map_config = map_configs[map_name]
     env = gym.make(env_name, is_slippery=False, map_name=map_name, desc=map_config)
-
+    env.reset(seed=seed)
     env_seeded(env, seed)
 
     num_states = env.observation_space.n

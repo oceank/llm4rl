@@ -8,19 +8,20 @@ tr_eps=15000 #5000 #15000 # number of episodes for training
 lr=0.9 # learning rate of Q-learning before epsilon decays to 0
 lr_final=0.0001 # learning rate of Q-learning after epsilon decays to 0
 ev_eps=25 #25 #25 #5 #25 #100 # number of episodes per evaluation
-ev_interval=25 #1 25 #100 # evaluation frequency: e.g., evaluate the policy during training every 100 episodes 
+ev_interval=1 #1 25 #100 # evaluation frequency: e.g., evaluate the policy during training every 100 episodes
 start_epsilon=1.0 # the initial value of the epsilon
 final_epsilon=0.0 # the final value of the ep
 epsilon_decay=0.0004 #0.0001 # the decayed epsilon value every episode (or step). With the current setting, epsilon will decay to 0 after 10000 episodes
 
 # --is_slippery
 # --full_map_observable
-full_map_desc_type=2 # 0, 1, 2
+full_map_desc_type=0 # 0, 1, 2
 history_window_size=0 # 0, 5
-tr_config_prefix=" --history_window_size ${history_window_size} --full_map_observable --full_map_desc_type ${full_map_desc_type} --n_episodes_eval ${ev_eps} --n_episodes ${tr_eps} --eval_interval ${ev_interval} "
+tr_config_prefix=" --history_window_size ${history_window_size} --n_episodes_eval ${ev_eps} --n_episodes ${tr_eps} --eval_interval ${ev_interval} "
+#tr_config_prefix="${tr_config_prefix} --full_map_observable --full_map_desc_type ${full_map_desc_type} "
 rl_config=" --learning_rate ${lr} --final_learning_rate ${lr_final} --start_epsilon ${start_epsilon} --final_epsilon ${final_epsilon} --epsilon_decay ${epsilon_decay}"
 
-seeds=(1 2 3 4 5)
+seeds=(1) #2 3 4 5)
 #seeds=(1) # 2 3 4 5)
 for map_name in "${map_names[@]}"
 do

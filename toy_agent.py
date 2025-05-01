@@ -1,18 +1,23 @@
 from __future__ import annotations
-import torch
+
+import os
+os.environ["MKL_THREADING_LAYER"] = "GNU"  # or move numpy to top as shown below
+
+import numpy as np  # ← move this to line 3, before torch or others
+
 from collections import defaultdict
-import numpy as np
+import random
+import argparse
+import json
+
+import torch
 from tqdm import tqdm
 import gymnasium as gym
 from openai import OpenAI
-import argparse
-import os
-import json
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
-import random
 import scipy.stats as stats
-from utility import shaped_reward, llmModel, CorralFastIGW, FrozenLakeAgent, evaluate_agent, map_configs 
 
+from utility import shaped_reward, llmModel, CorralFastIGW, FrozenLakeAgent, evaluate_agent, map_configs, platform_seeded, env_seeded
 
 
 if __name__ == '__main__':
@@ -39,8 +44,11 @@ if __name__ == '__main__':
     parser.add_argument('--use_chatgpt', action='store_true', help='Use a ChatGPT model as the llm module')
     parser.add_argument('--max_new_tokens', type=int, default=128, help='the max number of tokens for newly generated text')
     parser.add_argument('--use_fewshot', action='store_true', help='Use few-shot examples')
+    parser.add_argument('--debug', action='store_true', help='enable debugging. More information will be printed out.')
  
     args = parser.parse_args()
+
+    platform_seeded(args.seed)
 
     chatgpt_client=None
     if args.use_chatgpt:
@@ -54,13 +62,10 @@ if __name__ == '__main__':
             api_key=openai_key,
         )
 
-    debug=True
+    debug=args.debug
 
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
     #epsilon_decay = args.start_epsilon / (args.n_episodes / 2)
 
-    milestones = [] #[(1, 1), (2, 2)], currently only use it with the map 3x3
     agent_type_short_names = {
         "random": "RND",
         "llm"   : "LLM",
@@ -78,13 +83,14 @@ if __name__ == '__main__':
     
     h_tag = f"H{args.history_window_size}"
     o_tag = f"FM{args.full_map_desc_type}" if args.full_map_observable else "PM"
-    prompt_tag = f"basic_{h_tag}_{o_tag}"
+    if args.use_fewshot:
+        prompt_tag = "Fewshot"
+    else:
+        prompt_tag = "Zeroshot"
+    prompt_tag += f"_basic_{h_tag}_{o_tag}"
+    milestones = [] #[(1, 1), (2, 2)], currently only use it with the map 3x3
     if len(milestones) > 0:
         prompt_tag += "_UseMilestones"
-    if args.use_fewshot:
-        prompt_tag += "_Fewshot"
-    else:
-        prompt_tag += "_Zeroshot"
     train_eval_tag = f"EvalEp{args.n_episodes_eval}EvalIntv{args.eval_interval}TrainEp{args.n_episodes}"
     save_dir = f'./result/{env_id}/{llm_model_name}_{agent_name}/{prompt_tag}/{train_eval_tag}/seed_{args.seed}/'
     os.makedirs(save_dir, exist_ok=True)
@@ -118,12 +124,12 @@ if __name__ == '__main__':
     env = gym.make(env_name, is_slippery=args.is_slippery, map_name=map_name, desc=map_config)
     env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=args.n_episodes)
     obs, info = env.reset(seed=args.seed)
-    env.action_space.seed(args.seed)
+    env_seeded(env, args.seed)
 
     eval_env = gym.make(env_name, is_slippery=args.is_slippery, map_name=map_name, desc=map_config)
     eval_env = gym.wrappers.RecordEpisodeStatistics(eval_env, deque_size=args.n_episodes)
     obs, info = eval_env.reset(seed=args.seed+1000000)
-    eval_env.action_space.seed(args.seed+1000000)
+    env_seeded(eval_env, args.seed+1000000)
 
 
     # training and/or evaluating the agent

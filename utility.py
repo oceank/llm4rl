@@ -1,14 +1,19 @@
 from __future__ import annotations
-import torch
 from collections import defaultdict
+import os
+import random
+
+import torch
 import numpy as np
-from tqdm import tqdm
 import gymnasium as gym
 from openai import OpenAI
-import os
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
-import random
+
 import pickle
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+
+
 
 map_configs = {
         "2x2OneStep": [
@@ -50,7 +55,6 @@ def platform_seeded(seed):
         torch.cuda.manual_seed_all(seed)
 
 def env_seeded(env, seed):
-    env.reset(seed=seed)
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
 
@@ -230,9 +234,21 @@ class llmModel:
             "- Right: Frozen\n"
             "\n\n"
             "What should you do next? Please respond with one of: 'move left', 'move right', 'move up', 'move down'.\n"
-            "Response: move right. The right direction is a frozen surface that is safe to move onto. The down direction is a hole that will fails the agent if it is on it. The left direction is the map's edge where the aget will waste a step if it moves towards it. The up direction is the start location that is safe to move onto. Since there two directions (right and up) are safe and possibly rewarded to move towards, here I randomly pick one from them, which is the right direction, and hence decide to move right."
+            "Response: move right. Down leads to a hole and failure. Left is the map’s edge, resulting in a wasted step. Both right and up directions are safe, so I randomly select right."
         )        
         examples.append(example_1)
+        '''
+            "Response: move right. Down leads to a hole and failure. Left is the map’s edge, resulting in a wasted step. Both right and up directions are safe, so I randomly select right."
+
+
+            "Response: move right. The right direction is a frozen surface that is safe to move onto. "
+            "The down direction is a hole that will fail the agent if it is on it. "
+            "The left direction is the map's edge where the agent will waste a step if it moves towards it. "
+            "The up direction is the start location that is safe to move onto. "
+            "Since there are two directions (right and up) that are safe and possibly rewarded to move towards, "
+            "here I randomly pick one from them, which is the right direction, and hence decide to move right."
+       '''
+
 
         # the following example for the situation when the history is enable drives the LLM agent to a worse performance, so disable it for now.
         #if self.history_window_size != 0:
@@ -305,7 +321,7 @@ class llmModel:
                     for ci, v in enumerate(row):
                         self.map_text_desc += f"\t Row {ri}, Column {ci}: the tile is {v}.\n"
 
-            map_rows = len(self.map_config)
+        map_rows = len(self.map_config)
         self.map_info_desc_for_prompt = f"The map is fully observable. The map is a {map_rows}x{map_rows} grid as shown below (each tile is represented by a single capital letter):\n{self.map_text_desc}\n{self.tile_meanings_text}"
 
 
@@ -563,8 +579,9 @@ def evaluate_agent(agent, eval_env, n_episodes_eval=10, debug=False):
 
     for episode in tqdm(range(n_episodes_eval)):
         obs, _ = eval_env.reset()
-        print(f"[Map Info]:")
-        print_map_desc(eval_env.spec.kwargs['desc'])
+        if debug:
+            print(f"[Map Info]:")
+            print_map_desc(eval_env.spec.kwargs['desc'])
 
         done = False
         episode_return = 0
@@ -596,9 +613,6 @@ def evaluate_agent(agent, eval_env, n_episodes_eval=10, debug=False):
     return avg_return, eval_returns
 
 
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 def plot_mean_sem(results_dict, label=None, color=None, save_path=None):
     """
@@ -647,7 +661,6 @@ def plot_mean_sem(results_dict, label=None, color=None, save_path=None):
 
 def collect_llm_experiences(save_path, env_name = "FrozenLake-v1", map_name="4x4", n_episodes=1000, seed=0, llm_config=None):
     env = gym.make(env_name, is_slippery=False, map_name=map_name, desc=map_configs[map_name])
-    env_seeded(env, seed)
 
     if llm_config is None:
         llm_config = {}
@@ -678,7 +691,8 @@ def collect_llm_experiences(save_path, env_name = "FrozenLake-v1", map_name="4x4
 
     buffer = []
 
-    state, _ = env.reset()
+    env.reset(seed=seed)
+    env_seeded(env, seed)
     step_count = 0
     episode_returns = []
     current_episode_rewards = []
