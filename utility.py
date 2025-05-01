@@ -205,16 +205,10 @@ class llmModel:
     def get_few_shot_text(self):
         few_shot_examples = ""
         examples = []
-        # 3x3 map
-        '''
-        SFF
-        FFH
-        HFG
-        '''
-        # do not move towards edges and holes
-        example_1=(
+
+        system=(
             "System: You are playing Frozen Lake, a grid-based game. "
-            "The objective is to move from the start tile (0, 0) (marked as S) to the goal tile (2, 2) (marked as G) without falling into holes (H) on the grid. "
+            f"The objective is to move from the start tile (0, 0) (marked as S) to the goal tile ({self.grid_size-1}, {self.grid_size-1}) (marked as G) without falling into holes (H) on the grid. "
             "The frozen surface is not slippery such that the intended action is executed with a probability of 1. "
             "At each step, you can take one of the following actions:\n"
             "- 'left': move meft\n"
@@ -226,29 +220,63 @@ class llmModel:
             "\n\n"
             "[History]: \n"
             "\n\n"
-            "User: You are currently at position (1, 0), which is a Start tile.\n"
+        )
+
+        if self.grid_size == 2:
+            user_and_response=(
+            "User: You are currently at position (0, 0), which is a Start tile.\n"
             "Surrounding tiles:\n"
-            "- Up: Start\n"
+            "- Up: Edge of the map\n"
             "- Down: Hole\n"
             "- Left: Edge of the map\n"
             "- Right: Frozen\n"
             "\n\n"
             "What should you do next? Please respond with one of: 'move left', 'move right', 'move up', 'move down'.\n"
-            "Response: move right. Down leads to a hole and failure. Left is the map’s edge, resulting in a wasted step. Both right and up directions are safe, so I randomly select right."
-        )        
+            "Response: move right. Down leads to a hole and failure. Left and up are the map’s edges, resulting in a wasted step. So I select right."
+            )
+        elif self.grid_size == 3:
+            # do not move towards edges and holes
+            user_and_response=(
+                "User: You are currently at position (1, 0), which is a Frozen tile.\n"
+                "Surrounding tiles:\n"
+                "- Up: Start\n"
+                "- Down: Hole\n"
+                "- Left: Edge of the map\n"
+                "- Right: Frozen\n"
+                "\n\n"
+                "What should you do next? Please respond with one of: 'move left', 'move right', 'move up', 'move down'.\n"
+                "Response: move right. Down leads to a hole and failure. Left is the map’s edge, resulting in a wasted step. Both right and up directions are safe, so I randomly select right."
+            )
+        elif self.grid_size == 4:
+            # do not move towards edges and holes
+            user_and_response=(
+                "User: You are currently at position (3, 1), which is a Frozen tile.\n"
+                "Surrounding tiles:\n"
+                "- Up: Frozen\n"
+                "- Down: Edge of the map\n"
+                "- Left: Hole\n"
+                "- Right: Frozen\n"
+                "\n\n"
+                "What should you do next? Please respond with one of: 'move left', 'move right', 'move up', 'move down'.\n"
+                "Response: move right. Left leads to a hole and failure. Down is the map’s edge, resulting in a wasted step. Both right and up directions are safe, so I randomly select right."
+            )
+        elif self.grid_size == 8:
+            # do not move towards edges and holes
+            user_and_response=(
+                "User: You are currently at position (6, 0), which is a Frozen tile.\n"
+                "Surrounding tiles:\n"
+                "- Up: Frozen\n"
+                "- Down: Frozen\n"
+                "- Left: Edge of the map\n"
+                "- Right: Hole\n"
+                "\n\n"
+                "What should you do next? Please respond with one of: 'move left', 'move right', 'move up', 'move down'.\n"
+                "Response: move down. Right leads to a hole and failure. Left is the map’s edge, resulting in a wasted step. Both up and down directions are safe, so I randomly select down."
+            )
+        else:
+            raise f"unsuppoerted map size {self.grid_size}x{self.grid_size} for few-shot prompt"
+        example_1 = system + user_and_response
         examples.append(example_1)
-        '''
-            "Response: move right. Down leads to a hole and failure. Left is the map’s edge, resulting in a wasted step. Both right and up directions are safe, so I randomly select right."
-
-
-            "Response: move right. The right direction is a frozen surface that is safe to move onto. "
-            "The down direction is a hole that will fail the agent if it is on it. "
-            "The left direction is the map's edge where the agent will waste a step if it moves towards it. "
-            "The up direction is the start location that is safe to move onto. "
-            "Since there are two directions (right and up) that are safe and possibly rewarded to move towards, "
-            "here I randomly pick one from them, which is the right direction, and hence decide to move right."
-       '''
-
 
         # the following example for the situation when the history is enable drives the LLM agent to a worse performance, so disable it for now.
         #if self.history_window_size != 0:
