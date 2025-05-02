@@ -88,8 +88,11 @@ if __name__ == '__main__':
     else:
         prompt_tag = "Zeroshot"
     prompt_tag += f"_basic_{h_tag}_{o_tag}"
-    milestones = [] #[(1, 1), (2, 2)], currently only use it with the map 3x3
+    milestones = [] #[(1, 1), (2, 2)] #, currently only use it with the map 3x3
     if len(milestones) > 0:
+        print("map:")
+        print(map_config)
+        print(f"milestones: {milestones}")
         prompt_tag += "_UseMilestones"
     train_eval_tag = f"EvalEp{args.n_episodes_eval}EvalIntv{args.eval_interval}TrainEp{args.n_episodes}"
     save_dir = f'./result/{env_id}/{llm_model_name}_{agent_name}/{prompt_tag}/{train_eval_tag}/seed_{args.seed}/'

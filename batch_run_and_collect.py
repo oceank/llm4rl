@@ -11,6 +11,7 @@ import pandas as pd
 parser = argparse.ArgumentParser()
 parser.add_argument("--map_size", type=str, required=True, help="e.g., 2x2, 3x3, 4x4")
 parser.add_argument("--llm_model_name", type=str, required=True, help="e.g., TheBloke/deepseek-llm-7b-chat-GPTQ")
+parser.add_argument("--use_chatgpt", action="store_true", help='indicate to use ChatGPT API')
 args = parser.parse_args()
 
 map_name = args.map_size
@@ -33,14 +34,14 @@ max_new_tokens = 32 #128
 configurations = [
     {"desc": "basic", "history": False, "full_map": False, "full_map_type": 0, "few_shot": False},
     {"desc": "basic + history", "history": True, "full_map": False, "full_map_type": 0, "few_shot": False},
-    {"desc": "basic + full map 0", "history": False, "full_map": True, "full_map_type": 0, "few_shot": False},
+    #{"desc": "basic + full map 0", "history": False, "full_map": True, "full_map_type": 0, "few_shot": False},
     {"desc": "basic + full map 1", "history": False, "full_map": True, "full_map_type": 1, "few_shot": False},
-    {"desc": "basic + full map 2", "history": False, "full_map": True, "full_map_type": 2, "few_shot": False},
-    {"desc": "basic + fulll map 1 + history", "history": True, "full_map": True, "full_map_type": 1, "few_shot": False},
+    #{"desc": "basic + full map 2", "history": False, "full_map": True, "full_map_type": 2, "few_shot": False},
+    #{"desc": "basic + fulll map 1 + history", "history": True, "full_map": True, "full_map_type": 1, "few_shot": False},
     {"desc": "basic + few-shots", "history": False, "full_map": False, "full_map_type": 0, "few_shot": True},
-    {"desc": "basic + few-shots + history", "history": True, "full_map": False, "full_map_type": 0, "few_shot": True},
+    #{"desc": "basic + few-shots + history", "history": True, "full_map": False, "full_map_type": 0, "few_shot": True},
     {"desc": "basic + few-shots + full map 1", "history": False, "full_map": True, "full_map_type": 1, "few_shot": True},
-    {"desc": "basic + few-shots + full map 1 + history", "history": True, "full_map": True, "full_map_type": 1, "few_shot": True},
+    #{"desc": "basic + few-shots + full map 1 + history", "history": True, "full_map": True, "full_map_type": 1, "few_shot": True},
 ]
 
 # ====== Main Logic ======
@@ -86,6 +87,8 @@ for config in configurations:
             cmd += ["--full_map_observable", "--full_map_desc_type", str(full_map_type)]
         if fewshot_flag:
             cmd += ["--use_fewshot"]
+        if args.use_chatgpt:
+            cmd += ["--use_chatgpt"]
 
         subprocess.run(cmd, check=True)
 
