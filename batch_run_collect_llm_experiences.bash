@@ -1,19 +1,21 @@
 #!/bin/bash
 
+llmrl_root_dir=$1
 
-root_dir=$1
 llm_model_name="TheBloke/deepseek-llm-7b-chat-GPTQ" # 
+use_chatgpt=0
 # --use_chatgpt
 # --full_map_observable
 n_episodes_to_collect=100
 map_names=("2x2" "3x3" "4x4" "8x8")
-script="${root_dir}/run_collect_llm_experiences_v2.py"
+script="${llmrl_root_dir}/slurm_job_collect_llm_trajs.bash"
 for map_name in "${map_names[@]}"
 do
-    config="--llm_model_name ${llm_model_name} --map_name ${map_name} --n_episodes_to_collect ${n_episodes_to_collect}"
+    config=" ${map_name} ${llm_model_name} ${n_episodes_to_collect}"
+    echo -e "Collecting the LLM trajectories under the config: ${config}"
     # basic prompt: partially observable
-    python ${script} ${config}
+    sbatch ${script} ${config} 0 ${use_chatgpt}
     # basic + full map 1: fully obserable
-    python ${script} ${config} --full_map_observable
+    sbatch ${script} ${config} 1 ${use_chatgpt}
 done
 
