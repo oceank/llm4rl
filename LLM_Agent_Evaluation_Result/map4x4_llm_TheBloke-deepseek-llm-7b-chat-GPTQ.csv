@@ -1,0 +1,11 @@
+Configuration,Mean,SEM
+basic,0.096,0.0299
+basic + history,0.056,0.024
+basic + full map 0,0.176,0.0271
+basic + full map 1,0.216,0.0325
+basic + full map 2,0.264,0.0412
+basic + fulll map 1 + history,0.12,0.0283
+basic + few-shots,0.208,0.0265
+basic + few-shots + history,0.088,0.0294
+basic + few-shots + full map 1,0.216,0.0466
+basic + few-shots + full map 1 + history,0.096,0.016

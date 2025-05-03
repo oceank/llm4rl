@@ -1,0 +1,6 @@
+Configuration,Mean,SEM
+basic,1.0,0.0
+basic + history,1.0,0.0
+basic + full map 1,1.0,0.0
+basic + few-shots,1.0,0.0
+basic + few-shots + full map 1,1.0,0.0
