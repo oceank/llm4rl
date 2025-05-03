@@ -12,8 +12,8 @@ do
     do
         for buffer_dir in "${buffer_dirs[@]}"
         do
-            echo "===> evaluate the DQN agent for the map ${map_name} with ${observability} observable 3-D observation and possible prior buffer in (${buffer_dir})"
-            sbatch ./slurm_job_dqn.bash ${map_name} ${observability} ${buffer_dir}
+            echo "===> evaluate the DQN agent for the map ${map_name} with ${observability} observable 3-D observation and possible prior buffer in ('${buffer_dir}')"
+            sbatch ./slurm_job_dqn.bash "${map_name}" "${observability}" "${buffer_dir}"
         done
     done
 
