@@ -10,32 +10,38 @@ from tqdm import tqdm
 import pickle
 from utility import map_configs, platform_seeded, env_seeded
 
-# ===== Tile Encoding and One-Hot Observation Conversion =====
-tile_channels = {'S': 0, 'F': 1, 'H': 2, 'G': 3, 'A': 4}  # A = Agent
-NUM_CHANNELS = 5
+# ===== Tile Encoding and Observation Conversion =====
+tile_mapping = {'S': 1, 'F': 2, 'H': 3, 'G': 4}
+AGENT_VALUE = 5
 
 def build_observation_tensor(map_desc, obs_int, observability='partial'):
     n = len(map_desc)
-    obs_tensor = np.zeros((NUM_CHANNELS, n, n), dtype=np.float32)
-
+    map_tensor = np.array([[tile_mapping[c] for c in row] for row in map_desc])
     row, col = divmod(obs_int, n)
 
-    for i in range(n):
-        for j in range(n):
-            tile = map_desc[i][j]
-            if observability == 'full' or (abs(i - row) + abs(j - col) == 1 or (i == row and j == col)):
-                obs_tensor[tile_channels[tile], i, j] = 1.0
+    if observability == 'full':
+        obs_tensor = map_tensor.copy()
+    elif observability == 'partial':
+        mask = np.zeros((n, n), dtype=int)
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        mask[row, col] = 1
+        for dr, dc in directions:
+            nr, nc = row + dr, col + dc
+            if 0 <= nr < n and 0 <= nc < n:
+                mask[nr, nc] = 1
+        obs_tensor = map_tensor * mask
+    else:
+        raise ValueError("Observability must be either 'partial' or 'full'")
 
-    # Mark the agent's location in the agent channel
-    obs_tensor[tile_channels['A'], row, col] = 1.0
-    return obs_tensor
+    obs_tensor[row, col] = AGENT_VALUE
+    return obs_tensor.astype(np.float32) / 5.0
 
-# ===== ConvNet for 3D Observations =====
+# ===== ConvNet for 2D Observations =====
 class ConvQNetwork(nn.Module):
     def __init__(self, grid_size, num_actions):
         super(ConvQNetwork, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(NUM_CHANNELS, 32, kernel_size=3, padding=1),
+            nn.Conv2d(1, 32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.ReLU(),
@@ -75,7 +81,7 @@ def evaluate_agent(env, q_net, grid_size, map_desc, observability, num_episodes=
         done = False
         while not done:
             obs = build_observation_tensor(map_desc, state, observability)
-            state_tensor = torch.tensor(obs).unsqueeze(0).to(device)
+            state_tensor = torch.tensor(obs).unsqueeze(0).unsqueeze(0).to(device)
             with torch.no_grad():
                 action = q_net(state_tensor).argmax().item()
             next_state, reward, terminated, truncated, _ = env.step(action)
@@ -141,7 +147,7 @@ def train_dqn(env_name="FrozenLake-v1", map_name="4x4", max_steps=20000, eval_in
         done = False
         while not done and step_count < max_steps:
             obs = build_observation_tensor(map_desc, state, observability)
-            state_tensor = torch.tensor(obs).unsqueeze(0).to(device)
+            state_tensor = torch.tensor(obs).unsqueeze(0).unsqueeze(0).to(device)
 
             if random.random() < epsilon:
                 action = env.action_space.sample()
@@ -162,11 +168,11 @@ def train_dqn(env_name="FrozenLake-v1", map_name="4x4", max_steps=20000, eval_in
 
                 states_tensor = torch.tensor([
                     build_observation_tensor(map_desc, s, observability) for s in states
-                ]).to(device)
+                ]).unsqueeze(1).to(device)
 
                 next_states_tensor = torch.tensor([
                     build_observation_tensor(map_desc, s, observability) for s in next_states
-                ]).to(device)
+                ]).unsqueeze(1).to(device)
 
                 actions = torch.LongTensor(actions).unsqueeze(1).to(device)
                 rewards_b = torch.FloatTensor(rewards_b).to(device)
