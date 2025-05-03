@@ -18,7 +18,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--map_size", type=str, required=True, help="e.g., 2x2, 3x3, 4x4")
 parser.add_argument("--observability", type=str, required=True, help="full, partial")
 parser.add_argument("--llm_model_name", type=str, default="deepseek-ai/deepseek-llm-7b-chat-GPTQ")
-parser.add_argument("--use_prior_trajs", action='store_true')
 parser.add_argument("--buffer_dir", type=str, default="/work/suj/llm4rl/llm_agent_trajs")
 args = parser.parse_args()
 
@@ -49,7 +48,7 @@ max_steps=100000 #20000
 eval_interval=1000
 seeds=[1, 2, 3, 4, 5]
 buffer_paths=None
-if args.use_prior_trajs:
+if args.buffer_dir != "": # if it is provided; an empty string "" indicates no buffer dir
     buffer_paths = fetch_prior_buffer_paths(args.map_size, args.observability, seeds, args.buffer_dir)
 
 
@@ -68,12 +67,10 @@ for seed in seeds:
 
 
 label = f"Map{map_name}"
-if buffer_paths:
-    label += "_withLLMTrajs"
 color="blue"
 save_path=f"{label}_MaxSteps{max_steps}_EvalInterval{eval_interval}_{observability}Obs"
-if args.use_prior_trajs:
-    save_path += f"_priorTrajs"
+if buffer_paths:
+    save_path += f"_priorTrajsFromLLM"
 save_path += ".png"
 
 plot_mean_sem(all_eval_returns, label=label, color=color, save_path=save_path)

@@ -38,5 +38,5 @@ buffer_dir=$3
 script="/work/suj/llm4rl/run_dqn.py"
 
 echo "===> evaluate the LLM agent (${llm_model_name}) for the map ${map_name}"
-python ${script} --map_size ${map_name} --observability ${observability} --buffer_dir ${buffer_dir} --use_prior_trajs
+python ${script} --map_size ${map_name} --observability ${observability} --buffer_dir ${buffer_dir}
 
