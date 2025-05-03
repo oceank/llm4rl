@@ -33,14 +33,14 @@ max_new_tokens = 32 #128
 # ====== Define Configurations ======
 configurations = [
     {"desc": "basic", "history": False, "full_map": False, "full_map_type": 0, "few_shot": False},
-    {"desc": "basic + history", "history": True, "full_map": False, "full_map_type": 0, "few_shot": False},
+    #{"desc": "basic + history", "history": True, "full_map": False, "full_map_type": 0, "few_shot": False},
     #{"desc": "basic + full map 0", "history": False, "full_map": True, "full_map_type": 0, "few_shot": False},
     {"desc": "basic + full map 1", "history": False, "full_map": True, "full_map_type": 1, "few_shot": False},
     #{"desc": "basic + full map 2", "history": False, "full_map": True, "full_map_type": 2, "few_shot": False},
     #{"desc": "basic + fulll map 1 + history", "history": True, "full_map": True, "full_map_type": 1, "few_shot": False},
-    {"desc": "basic + few-shots", "history": False, "full_map": False, "full_map_type": 0, "few_shot": True},
+    #{"desc": "basic + few-shots", "history": False, "full_map": False, "full_map_type": 0, "few_shot": True},
     #{"desc": "basic + few-shots + history", "history": True, "full_map": False, "full_map_type": 0, "few_shot": True},
-    {"desc": "basic + few-shots + full map 1", "history": False, "full_map": True, "full_map_type": 1, "few_shot": True},
+    #{"desc": "basic + few-shots + full map 1", "history": False, "full_map": True, "full_map_type": 1, "few_shot": True},
     #{"desc": "basic + few-shots + full map 1 + history", "history": True, "full_map": True, "full_map_type": 1, "few_shot": True},
 ]
 
